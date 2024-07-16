@@ -16,9 +16,11 @@ namespace QuestionnaireMultiagent
     /// </summary>
     public partial class MainWindow : Window
     {
-        MultiAgent multiAgent = new MultiAgent();
+        MultiAgent? multiAgent;
         public MainWindow()
         {
+            InitializeComponent();
+            multiAgent = new MultiAgent(this);
             this.DataContext = multiAgent;
         }
 

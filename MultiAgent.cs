@@ -15,6 +15,10 @@ using Microsoft.SemanticKernel.Plugins.Web.Bing;
 using System.Net;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Reflection.Metadata;
+using System.Windows.Media;
 
 #pragma warning disable SKEXP0110, SKEXP0001, SKEXP0050, CS8600, CS8604
 
@@ -22,6 +26,8 @@ namespace QuestionnaireMultiagent
 {
     class MultiAgent : INotifyPropertyChanged
     {
+        MainWindow? mainWindow;
+
         string? DEPLOYMENT_NAME = Environment.GetEnvironmentVariable("AZURE_OPENAI_MODEL_DEPLOYMENT");
         string? ENDPOINT = Environment.GetEnvironmentVariable("AZURE_OPENAI_ENDPOINT");
         string? API_KEY = Environment.GetEnvironmentVariable("AZURE_OPENAI_API_KEY");
@@ -36,6 +42,7 @@ namespace QuestionnaireMultiagent
                 if (_Context != value)
                 {
                     _Context = value;
+                    updatePrompts();
                     OnPropertyChanged("Context");
                 }
             }
@@ -48,7 +55,7 @@ namespace QuestionnaireMultiagent
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        string _Question = "Does your service offer video generative AI?";
+        private string _Question = "Does your service offer video generative AI?";
         public string Question
         {
             get { return _Question; }
@@ -62,17 +69,36 @@ namespace QuestionnaireMultiagent
             }
         }
 
+        private string _AgentResponse = "";
+        public string AgentResponse
+        {
+            get { return _AgentResponse; }
+            set
+            {
+                if (_AgentResponse != value)
+                {
+                    _AgentResponse = value;
+                    OnPropertyChanged("AgentResponse");
+                }
+            }
+        }
+
         string? QuestionAnswererPrompt;
         string? AnswerCheckerPrompt;
         string? LinkCheckerPrompt;
         string? ManagerPrompt;
-        public MultiAgent()
+        public MultiAgent(MainWindow mainWindow)
         {
+            this.mainWindow = mainWindow;
             updatePrompts();
         }
 
         public async Task askQuestion()
         {
+            //AgentResponse = "Agents running...\n";
+            //Remove all the text in mainWindow.ResponseBox
+            mainWindow.ResponseBox.Document.Blocks.Clear();
+
             var builder = Kernel.CreateBuilder();
             builder.Services.AddSingleton<IFunctionInvocationFilter, SearchFunctionFilter>();
 
@@ -144,26 +170,29 @@ namespace QuestionnaireMultiagent
             string input = Question;
 
             chat.AddChatMessage(new ChatMessageContent(AuthorRole.User, input));
-            Console.WriteLine($"# {AuthorRole.User}: '{input}'");
+            //AgentResponse += ($"Question: '{input}'\n");
+            updateResponseBox("Question", input);
 
             await foreach (var content in chat.InvokeAsync())
             {
+                Color color;
                 switch (content.AuthorName)
                 {
                     case "QuestionAnswererAgent":
-                        Console.ForegroundColor = ConsoleColor.White;
+                        color = Colors.Black;
                         break;
                     case "AnswerCheckerAgent":
-                        Console.ForegroundColor = ConsoleColor.Blue;
+                        color = Colors.Blue;
                         break;
                     case "LinkCheckerAgent":
-                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        color = Colors.DarkGoldenrod;
                         break;
                     case "ManagerAgent":
-                        Console.ForegroundColor = ConsoleColor.Green;
+                        color = Colors.DarkGreen;
                         break;
                 }
-                Console.WriteLine($"# {content.Role} - {content.AuthorName ?? "*"}: '{content.Content}'");
+                //AgentResponse+=($"<Run FontWeight=\"Bold\">{content.AuthorName ?? "*"}:</Run> '{content.Content}'\n");
+                updateResponseBox(content.AuthorName,content.Content,color);
             }
         }
 
@@ -171,7 +200,8 @@ namespace QuestionnaireMultiagent
         {
             QuestionAnswererPrompt = "You are a question answerer for " + Context + "." +
             " You take in questions from a questionnaire and emit the answers from the perspective of " + Context + "," +
-            " using documentation from the public web. You also emit links to any websites you find that help answer the questions.";
+            " using documentation from the public web. You also emit links to any websites you find that help answer the questions." +
+            " Do not address the user as 'you' - make all responses solely in the third person.";
 
             AnswerCheckerPrompt = "You are an answer checker for " + Context + "." +
                 "Given a question and an answer, you check the answer for accuracy regarding " + Context + "," +
@@ -190,6 +220,25 @@ namespace QuestionnaireMultiagent
                 If the answer checker replies "ANSWER INCORRECT", or the link checker replies "LINK INCORRECT," you can reply "reject" and ask the question answerer to correct the answer.
                 Once the question has been answered properly, you can approve the request by just responding "approve"
             """;
+        }
+
+        public void updateResponseBox(string sender, string response)
+        {
+            updateResponseBox(sender, response, Colors.Black);
+        }
+
+        public void updateResponseBox(string sender, string response, Color color)
+        {
+            //Update mainWindow.ResponseBox to add the sender in bold, a colon, a space, and the response in normal text
+            Paragraph paragraph = new Paragraph();
+            Bold bold = new Bold(new Run(sender + ": "));
+            
+            bold.Foreground = new SolidColorBrush(color);
+            
+            paragraph.Inlines.Add(bold);
+            Run run = new Run(response);
+            paragraph.Inlines.Add(run);
+            mainWindow.ResponseBox.Document.Blocks.Add(paragraph);
         }
     }
 }
