@@ -1,12 +1,14 @@
-﻿<Window x:Class="QuestionnaireMultiagent.MainWindow"
+﻿<Window x:Name="QuestionnaireMultiagent" x:Class="QuestionnaireMultiagent.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Questionnaire Multiagent" Height="450" Width="800"
         WindowState="Maximized">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="242*"/>
+            <ColumnDefinition Width="25*"/>
+            <ColumnDefinition Width="78*"/>
+            <ColumnDefinition Width="455*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -15,12 +17,12 @@
             <RowDefinition Height="2*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Label Content="Context" Grid.Row="0" Grid.Column="0" Margin="5" FontSize="14" FontWeight="Bold"/>
-        <TextBox x:Name="ContextBox" Grid.Row="1" Grid.Column="0" Margin="5" Text="{Binding Context}" FontSize="16" TextWrapping="Wrap"/>
-        <Label Content="Question" Grid.Row="2" Grid.Column="0" Margin="5" FontSize="14" FontWeight="Bold"/>
-        <TextBox x:Name="QuestionBox" Grid.Row="3" Grid.Column="0" Margin="5" Text="{Binding Question}" FontSize="16" TextWrapping="Wrap"/>
-        <Button x:Name="AskButton" Click="AskButton_Click" Content="Ask!" Grid.Row="4" Grid.Column="0" Margin="5" FontSize="14" FontWeight="Bold"/>
-        <Label Content="Agents' Response" Grid.Row="0" Grid.Column="1" Margin="5" FontSize="14" FontWeight="Bold"/>
-        <RichTextBox x:Name="ResponseBox" Grid.Row="1" Grid.Column="1" Grid.RowSpan="4" FontSize="14" Margin="5" ScrollViewer.CanContentScroll="True" VerticalScrollBarVisibility="Auto"/>
+        <Label Content="Context" Grid.Row="0" Grid.Column="0" Margin="5,5,5,5" FontSize="14" FontWeight="Bold" Grid.ColumnSpan="2"/>
+        <TextBox x:Name="ContextBox" Grid.Row="1" Grid.Column="0" Margin="5,5,5,5" Text="{Binding Context}" FontSize="16" TextWrapping="Wrap" Grid.ColumnSpan="2"/>
+        <Label Content="Question" Grid.Row="2" Grid.Column="0" Margin="5,5,5,5" FontSize="14" FontWeight="Bold" Grid.ColumnSpan="2"/>
+        <TextBox x:Name="QuestionBox" Grid.Row="3" Grid.Column="0" Margin="5,5,5,5" Text="{Binding Question}" FontSize="16" TextWrapping="Wrap" Grid.ColumnSpan="2"/>
+        <Button x:Name="AskButton" Click="AskButton_Click" Content="Ask!" Grid.Row="4" Grid.Column="0" Margin="5,5,5,5" FontSize="14" FontWeight="Bold" Grid.ColumnSpan="2"/>
+        <Label Content="Agents' Response" Grid.Row="0" Grid.Column="2" Margin="5,5,5,5" FontSize="14" FontWeight="Bold" Grid.ColumnSpan="2"/>
+        <RichTextBox x:Name="ResponseBox" x:FieldModifier="public" Grid.Row="1" Grid.Column="2" Grid.RowSpan="4" FontSize="14" Margin="5,5,5,5" ScrollViewer.CanContentScroll="True" VerticalScrollBarVisibility="Auto" Grid.ColumnSpan="2"/>
     </Grid>
 </Window>
