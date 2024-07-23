@@ -69,20 +69,6 @@ namespace QuestionnaireMultiagent
             }
         }
 
-        private string _AgentResponse = "";
-        public string AgentResponse
-        {
-            get { return _AgentResponse; }
-            set
-            {
-                if (_AgentResponse != value)
-                {
-                    _AgentResponse = value;
-                    OnPropertyChanged("AgentResponse");
-                }
-            }
-        }
-
         string? QuestionAnswererPrompt;
         string? AnswerCheckerPrompt;
         string? LinkCheckerPrompt;
@@ -170,7 +156,7 @@ namespace QuestionnaireMultiagent
             string input = Question;
 
             chat.AddChatMessage(new ChatMessageContent(AuthorRole.User, input));
-            //AgentResponse += ($"Question: '{input}'\n");
+
             updateResponseBox("Question", input);
 
             await foreach (var content in chat.InvokeAsync())
@@ -191,7 +177,7 @@ namespace QuestionnaireMultiagent
                         color = Colors.DarkGreen;
                         break;
                 }
-                //AgentResponse+=($"<Run FontWeight=\"Bold\">{content.AuthorName ?? "*"}:</Run> '{content.Content}'\n");
+
                 updateResponseBox(content.AuthorName,content.Content,color);
             }
         }
