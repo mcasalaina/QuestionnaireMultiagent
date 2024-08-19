@@ -33,6 +33,20 @@ namespace QuestionnaireMultiagent
         string? API_KEY = Environment.GetEnvironmentVariable("AZURE_OPENAI_API_KEY");
         string? BING_API_KEY = Environment.GetEnvironmentVariable("BING_API_KEY");
 
+        private int _CharacterLimit = 2000;
+        public int CharacterLimit
+        {
+            get { return _CharacterLimit; }
+            set
+            {
+                if (_CharacterLimit != value)
+                {
+                    _CharacterLimit = value;
+                    OnPropertyChanged("CharacterLimit");
+                }
+            }
+        }
+
         private string _Context = "Microsoft Azure AI";
         public string Context
         {
@@ -159,6 +173,8 @@ namespace QuestionnaireMultiagent
 
             updateResponseBox("Question", input);
 
+            string finalAnswer = "";
+
             await foreach (var content in chat.InvokeAsync())
             {
                 Color color;
@@ -166,6 +182,8 @@ namespace QuestionnaireMultiagent
                 {
                     case "QuestionAnswererAgent":
                         color = Colors.Black;
+                        //We assume here that the last time the QuestionAnswererAgent is called, it will have the final answer
+                        finalAnswer = content.Content;
                         break;
                     case "AnswerCheckerAgent":
                         color = Colors.Blue;
@@ -189,12 +207,15 @@ namespace QuestionnaireMultiagent
                 You take in questions from a questionnaire and emit the answers from the perspective of {Context},
                 using documentation from the public web. You also emit links to any websites you find that help answer the questions.
                 Do not address the user as 'you' - make all responses solely in the third person.
+                If you do not find information on a topic, you simply respond that there is no information available on that topic.
+                You will emit an answer that is no greater than {CharacterLimit} characters in length.
             """;
 
             AnswerCheckerPrompt = $"""
                 You are an answer checker for {Context}. Your responses always start with either the words ANSWER CORRECT or ANSWER INCORRECT.
                 Given a question and an answer, you check the answer for accuracy regarding {Context},
                 using public web sources when necessary. If everything in the answer is true, you verify the answer by responding "ANSWER CORRECT." with no further explanation.
+                You also ensure that the answer is no greater than {CharacterLimit} characters in length.
                 Otherwise, you respond "ANSWER INCORRECT - " and add the portion that is incorrect.
                 You do not output anything other than "ANSWER CORRECT" or "ANSWER INCORRECT - <portion>".
             """;

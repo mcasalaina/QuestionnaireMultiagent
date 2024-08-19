@@ -28,5 +28,12 @@ namespace QuestionnaireMultiagent
         {
             await multiAgent.askQuestion();
         }
+        private void QuestionBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                AskButton_Click(sender, e);
+            }
+        }
     }
 }
