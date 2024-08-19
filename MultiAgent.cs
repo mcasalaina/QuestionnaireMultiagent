@@ -205,10 +205,10 @@ namespace QuestionnaireMultiagent
         {
             string[,] data = LoadExcelFile(filename);
 
-            SaveToExcelFile(filename, data);
+            SaveExcelFile(filename, data);
         }
 
-        public void SaveToExcelFile(string filename, string[,] data)
+        public void SaveExcelFile(string filename, string[,] data)
         {
             var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Sheet1");
