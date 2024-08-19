@@ -84,6 +84,8 @@ namespace QuestionnaireMultiagent
             }
         }
 
+        string FinalAnswer = "";
+
         string? QuestionAnswererPrompt;
         string? AnswerCheckerPrompt;
         string? LinkCheckerPrompt;
@@ -98,7 +100,7 @@ namespace QuestionnaireMultiagent
         {
             //AgentResponse = "Agents running...\n";
             //Remove all the text in mainWindow.ResponseBox
-            mainWindow.ResponseBox.Document.Blocks.Clear();
+            mainWindow?.ResponseBox.Document.Blocks.Clear();
 
             var builder = Kernel.CreateBuilder();
             builder.Services.AddSingleton<IFunctionInvocationFilter, SearchFunctionFilter>();
@@ -174,38 +176,52 @@ namespace QuestionnaireMultiagent
 
             UpdateResponseBox("Question", input);
 
-            string finalAnswer = "";
+            FinalAnswer = "";
 
-            await foreach (var content in chat.InvokeAsync())
-            {
-                Color color;
-                switch (content.AuthorName)
+            try { 
+                await foreach (var content in chat.InvokeAsync())
                 {
-                    case "QuestionAnswererAgent":
-                        color = Colors.Black;
-                        //We assume here that the last time the QuestionAnswererAgent is called, it will have the final answer
-                        finalAnswer = content.Content;
-                        break;
-                    case "AnswerCheckerAgent":
-                        color = Colors.Blue;
-                        break;
-                    case "LinkCheckerAgent":
-                        color = Colors.DarkGoldenrod;
-                        break;
-                    case "ManagerAgent":
-                        color = Colors.DarkGreen;
-                        break;
-                }
+                    Color color;
+                    switch (content.AuthorName)
+                    {
+                        case "QuestionAnswererAgent":
+                            color = Colors.Black;
+                            //We assume here that the last time the QuestionAnswererAgent is called, it will have the final answer
+                            FinalAnswer = content.Content;
+                            break;
+                        case "AnswerCheckerAgent":
+                            color = Colors.Blue;
+                            break;
+                        case "LinkCheckerAgent":
+                            color = Colors.DarkGoldenrod;
+                            break;
+                        case "ManagerAgent":
+                            color = Colors.DarkGreen;
+                            break;
+                    }
 
-                UpdateResponseBox(content.AuthorName,content.Content,color);
+                    UpdateResponseBox(content.AuthorName, content.Content, color);
+                }
+            } catch (HttpOperationException e)
+            {
+                UpdateResponseBox("Agents Terminated Due To Error: ", e.Message, Colors.Red);
             }
         }
 
-        public void AnswerInExcelFile(string filename)
+        public async Task AnswerInExcelFile(string filename)
         {
             string[,] data = LoadExcelFile(filename);
 
-            SaveExcelFile(filename, data);
+            //Assume the first row is the header row, the first column is the question column, and the second column is the answer column
+            for (int i = 1; i < data.GetLength(0); i++)
+            {
+                string question = data[i, 0];
+                Question = question;
+                await AskQuestion();
+                data[i, 1] = FinalAnswer;
+
+                SaveExcelFile(filename, data);
+            }
         }
 
         public void SaveExcelFile(string filename, string[,] data)
@@ -301,7 +317,9 @@ namespace QuestionnaireMultiagent
             paragraph.Inlines.Add(bold);
             Run run = new Run(response);
             paragraph.Inlines.Add(run);
-            mainWindow.ResponseBox.Document.Blocks.Add(paragraph);
+            mainWindow?.ResponseBox.Document.Blocks.Add(paragraph);
+
+            Console.WriteLine(sender + ": " + response);
         }
     }
 }

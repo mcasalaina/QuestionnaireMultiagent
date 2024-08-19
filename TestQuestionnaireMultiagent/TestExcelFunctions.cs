@@ -10,10 +10,21 @@ namespace TestQuestionnaireMultiagent
 {
     internal class TestExcelFunctions
     {
+        private const string SAMPLE_QUESTIONNAIRE = "..\\..\\..\\..\\SampleQuestionnaire.xlsx";
+
+        //Make a static 2d array of questions and responses
+        private static string[,] SAMPLE_DATA = new string[4, 2]
+        {
+            { "Question", "Response" },
+            { "What AI services do you provide?", "" },
+            { "Does your platform offer generative AI?", "" },
+            { "What is your company's revenue?", "" }
+        };
+
         [Test]
         public void TestLoadExcelFile()
         {
-            string filename = "..\\..\\..\\..\\SampleQuestionnaire2.xlsx";
+            string filename = SAMPLE_QUESTIONNAIRE;
 
             //Get an absolute filename
             filename = System.IO.Path.GetFullPath(filename);
@@ -47,16 +58,7 @@ namespace TestQuestionnaireMultiagent
         [Test]
         public void TestSaveExcelFile()
         {
-            string filename = "..\\..\\..\\..\\SampleQuestionnaire.xlsx";
-
-            //Get an absolute filename
-            filename = System.IO.Path.GetFullPath(filename);
-
-            //Copy the file to the present working directory
-            System.IO.File.Copy(filename, System.IO.Path.GetFileName(filename), true);
-
-            //Get the full path of the copied file
-            filename = System.IO.Path.GetFullPath(System.IO.Path.GetFileName(filename));
+            string filename = CopyQuestionnaireFile();
 
             //Assert that the file exists
             Assert.That(System.IO.File.Exists(filename), Is.True);
@@ -89,6 +91,54 @@ namespace TestQuestionnaireMultiagent
                 for (int j = 0; j < data.GetLength(1); j++)
                 {
                     Assert.That(data[i, j], Is.EqualTo(data2[i, j]));
+                }
+            }
+
+            //Delete the copied file
+            System.IO.File.Delete(filename);
+        }
+
+        private static string CopyQuestionnaireFile()
+        {
+            string filename = SAMPLE_QUESTIONNAIRE;
+
+            //Get an absolute filename
+            filename = System.IO.Path.GetFullPath(filename);
+
+            //Copy the file to the present working directory
+            System.IO.File.Copy(filename, System.IO.Path.GetFileName(filename), true);
+
+            //Get the full path of the copied file
+            filename = System.IO.Path.GetFullPath(System.IO.Path.GetFileName(filename));
+            return filename;
+        }
+
+        [Test]
+        public async Task TestAnswerInExcelFile()
+        {
+            //Make a temporary filename of the current time in milliseconds
+            string filename = DateTime.Now.Ticks + ".xlsx";
+
+            MultiAgent multiAgent = new(null);
+
+            multiAgent.SaveExcelFile(filename, SAMPLE_DATA);
+
+            multiAgent.Context = "Microsoft Azure AI";
+
+            //Assert that the file exists
+            Assert.That(System.IO.File.Exists(filename), Is.True);
+
+            await multiAgent.AnswerInExcelFile(filename);
+
+            //Load it back again
+            string[,] data2 = multiAgent.LoadExcelFile(filename);
+
+            //Check that for each row the data in the second column is nonempty if the data in the first column is nonempty
+            for (int i = 0; i < data2.GetLength(0); i++)
+            {
+                if (data2[i, 0] != "")
+                {
+                    Assert.That(data2[i, 1], Is.Not.EqualTo(""));
                 }
             }
 
