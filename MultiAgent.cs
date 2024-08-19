@@ -14,17 +14,18 @@ using Microsoft.SemanticKernel.Plugins.Web;
 using Microsoft.SemanticKernel.Plugins.Web.Bing;
 using System.Net;
 using System.Threading;
-using Microsoft.Extensions.DependencyInjection;
-using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Reflection.Metadata;
-using System.Windows.Media;
 
-#pragma warning disable SKEXP0110, SKEXP0001, SKEXP0050, CS8600, CS8604
+using System.IO;
+using System.Windows.Media;
+using System.Windows.Documents;
+using Microsoft.Extensions.DependencyInjection;
+using ClosedXML.Excel;
+
+#pragma warning disable SKEXP0110, SKEXP0001, SKEXP0050, CS8600, CS8604, CS8602
 
 namespace QuestionnaireMultiagent
 {
-    class MultiAgent : INotifyPropertyChanged
+    public class MultiAgent : INotifyPropertyChanged
     {
         MainWindow? mainWindow;
 
@@ -56,7 +57,7 @@ namespace QuestionnaireMultiagent
                 if (_Context != value)
                 {
                     _Context = value;
-                    updatePrompts();
+                    UpdatePrompts();
                     OnPropertyChanged("Context");
                 }
             }
@@ -90,10 +91,10 @@ namespace QuestionnaireMultiagent
         public MultiAgent(MainWindow mainWindow)
         {
             this.mainWindow = mainWindow;
-            updatePrompts();
+            UpdatePrompts();
         }
 
-        public async Task askQuestion()
+        public async Task AskQuestion()
         {
             //AgentResponse = "Agents running...\n";
             //Remove all the text in mainWindow.ResponseBox
@@ -171,7 +172,7 @@ namespace QuestionnaireMultiagent
 
             chat.AddChatMessage(new ChatMessageContent(AuthorRole.User, input));
 
-            updateResponseBox("Question", input);
+            UpdateResponseBox("Question", input);
 
             string finalAnswer = "";
 
@@ -196,11 +197,59 @@ namespace QuestionnaireMultiagent
                         break;
                 }
 
-                updateResponseBox(content.AuthorName,content.Content,color);
+                UpdateResponseBox(content.AuthorName,content.Content,color);
             }
         }
 
-        public void updatePrompts()
+        public void AnswerInExcelFile(string filename)
+        {
+            string[,] data = LoadExcelFile(filename);
+
+            SaveToExcelFile(filename, data);
+        }
+
+        public void SaveToExcelFile(string filename, string[,] data)
+        {
+            var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Sheet1");
+
+            int rowCount = data.GetLength(0);
+            int colCount = data.GetLength(1);
+
+            for (int i = 0; i < rowCount; i++)
+            {
+                for (int j = 0; j < colCount; j++)
+                {
+                    worksheet.Cell(i + 1, j + 1).Value = data[i, j];
+                }
+            }
+
+            workbook.SaveAs(filename);
+        }
+
+        // Loads an Excel file and read the contents of the first sheet into a 2D array
+        public string[,] LoadExcelFile(string filename)
+        {
+            var workbook = new XLWorkbook(filename);
+            var worksheet = workbook.Worksheet(1); // Get the first worksheet
+
+            int rowCount = worksheet.LastRowUsed().RowNumber();
+            int colCount = worksheet.LastColumnUsed().ColumnNumber();
+
+            string[,] data = new string[rowCount, colCount];
+
+            for (int i = 1; i <= rowCount; i++)
+            {
+                for (int j = 1; j <= colCount; j++)
+                {
+                    data[i - 1, j - 1] = worksheet.Cell(i, j).GetString();
+                }
+            }
+
+            return data;
+        }
+
+        public void UpdatePrompts()
         {
             QuestionAnswererPrompt = $"""
                 You are a question answerer for {Context}.
@@ -236,12 +285,12 @@ namespace QuestionnaireMultiagent
             """;
         }
 
-        public void updateResponseBox(string sender, string response)
+        public void UpdateResponseBox(string sender, string response)
         {
-            updateResponseBox(sender, response, Colors.Black);
+            UpdateResponseBox(sender, response, Colors.Black);
         }
 
-        public void updateResponseBox(string sender, string response, Color color)
+        public void UpdateResponseBox(string sender, string response, Color color)
         {
             //Update mainWindow.ResponseBox to add the sender in bold, a colon, a space, and the response in normal text
             Paragraph paragraph = new Paragraph();

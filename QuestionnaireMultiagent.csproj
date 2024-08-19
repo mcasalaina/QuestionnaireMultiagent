@@ -9,9 +9,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="TestQuestionnaireMultiagent\**" />
+    <EmbeddedResource Remove="TestQuestionnaireMultiagent\**" />
+    <None Remove="TestQuestionnaireMultiagent\**" />
+    <Page Remove="TestQuestionnaireMultiagent\**" />
+  </ItemGroup>
+
+  <ItemGroup>
 	<PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.17" />
 	<PackageReference Include="Azure.AI.OpenAI.Assistants" Version="1.0.0-beta.4" />
 	<PackageReference Include="Azure.Core" Version="1.40.0" />
+	<PackageReference Include="ClosedXML" Version="0.104.0-preview2" />
 	<PackageReference Include="Microsoft.SemanticKernel" Version="1.15.1" />
 	<PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.15.1-alpha" />
 	<PackageReference Include="Microsoft.SemanticKernel.Agents.OpenAI" Version="1.15.1-alpha" />
