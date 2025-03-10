@@ -19,6 +19,8 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Reflection.Metadata;
 using System.Windows.Media;
+using Microsoft.SemanticKernel.Plugins.Web.Google;
+using System.Net.NetworkInformation;
 
 #pragma warning disable SKEXP0110, SKEXP0001, SKEXP0050, CS8600, CS8604
 
@@ -32,6 +34,8 @@ namespace QuestionnaireMultiagent
         string? ENDPOINT = Environment.GetEnvironmentVariable("AZURE_OPENAI_ENDPOINT");
         string? API_KEY = Environment.GetEnvironmentVariable("AZURE_OPENAI_API_KEY");
         string? BING_API_KEY = Environment.GetEnvironmentVariable("BING_API_KEY");
+        string? GOOGLE_API_KEY = Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
+        string? GOOGLE_SEARCH_ID = Environment.GetEnvironmentVariable("GOOGLE_SEARCH_ID");
 
         private int _CharacterLimit = 2000;
         public int CharacterLimit
@@ -108,9 +112,11 @@ namespace QuestionnaireMultiagent
                             apiKey: API_KEY)
                         .Build();
 
-            BingConnector bing = new BingConnector(BING_API_KEY);
+            //BingConnector bing = new BingConnector(BING_API_KEY);
 
-            kernel.ImportPluginFromObject(new WebSearchEnginePlugin(bing), "bing");
+            //kernel.ImportPluginFromObject(new WebSearchEnginePlugin(bing), "bing");
+            GoogleConnector google = new GoogleConnector(GOOGLE_API_KEY, GOOGLE_SEARCH_ID);
+            kernel.ImportPluginFromObject(new WebSearchEnginePlugin(google), "google");
 
             ChatCompletionAgent QuestionAnswererAgent =
                 new()
