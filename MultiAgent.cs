@@ -28,16 +28,13 @@ namespace QuestionnaireMultiagent
 {
     class MultiAgent : INotifyPropertyChanged
     {
-        MainWindow? mainWindow;
-
-        string? DEPLOYMENT_NAME = Environment.GetEnvironmentVariable("AZURE_OPENAI_MODEL_DEPLOYMENT");
+        MainWindow? mainWindow;        string? DEPLOYMENT_NAME = Environment.GetEnvironmentVariable("AZURE_OPENAI_MODEL_DEPLOYMENT");
+        string? REASONING_MODEL_DEPLOYMENT = Environment.GetEnvironmentVariable("AZURE_OPENAI_REASONING_MODEL_DEPLOYMENT");
         string? ENDPOINT = Environment.GetEnvironmentVariable("AZURE_OPENAI_ENDPOINT");
         string? API_KEY = Environment.GetEnvironmentVariable("AZURE_OPENAI_API_KEY");
         string? BING_API_KEY = Environment.GetEnvironmentVariable("BING_API_KEY");
         string? GOOGLE_API_KEY = Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
-        string? GOOGLE_SEARCH_ID = Environment.GetEnvironmentVariable("GOOGLE_SEARCH_ID");
-
-        private int _CharacterLimit = 2000;
+        string? GOOGLE_SEARCH_ID = Environment.GetEnvironmentVariable("GOOGLE_SEARCH_ID");        private int _CharacterLimit = 2000;
         public int CharacterLimit
         {
             get { return _CharacterLimit; }
@@ -47,6 +44,20 @@ namespace QuestionnaireMultiagent
                 {
                     _CharacterLimit = value;
                     OnPropertyChanged("CharacterLimit");
+                }
+            }
+        }
+
+        private string _ModelSelection = "LLM";
+        public string ModelSelection
+        {
+            get { return _ModelSelection; }
+            set
+            {
+                if (_ModelSelection != value)
+                {
+                    _ModelSelection = value;
+                    OnPropertyChanged("ModelSelection");
                 }
             }
         }
@@ -101,29 +112,47 @@ namespace QuestionnaireMultiagent
         {
             //AgentResponse = "Agents running...\n";
             //Remove all the text in mainWindow.ResponseBox
-            mainWindow.ResponseBox.Document.Blocks.Clear();
-
-            var builder = Kernel.CreateBuilder();
+            mainWindow.ResponseBox.Document.Blocks.Clear();            var builder = Kernel.CreateBuilder();
             builder.Services.AddSingleton<IFunctionInvocationFilter, SearchFunctionFilter>();
 
+            // Build the main kernel used by most agents
             Kernel kernel = builder.AddAzureOpenAIChatCompletion(
                             deploymentName: DEPLOYMENT_NAME,
                             endpoint: ENDPOINT,
                             apiKey: API_KEY)
                         .Build();
 
-            //BingConnector bing = new BingConnector(BING_API_KEY);
-
-            //kernel.ImportPluginFromObject(new WebSearchEnginePlugin(bing), "bing");
+            // Create a Google connector for search functionality
             GoogleConnector google = new GoogleConnector(GOOGLE_API_KEY, GOOGLE_SEARCH_ID);
             kernel.ImportPluginFromObject(new WebSearchEnginePlugin(google), "google");
+
+            // Create a separate kernel for the QuestionAnswererAgent if Reasoning Model is selected
+            Kernel questionAnswererKernel;
+            if (ModelSelection == "Reasoning Model" && !string.IsNullOrEmpty(REASONING_MODEL_DEPLOYMENT))
+            {
+                var reasoningBuilder = Kernel.CreateBuilder();
+                reasoningBuilder.Services.AddSingleton<IFunctionInvocationFilter, SearchFunctionFilter>();
+                questionAnswererKernel = reasoningBuilder.AddAzureOpenAIChatCompletion(
+                                deploymentName: REASONING_MODEL_DEPLOYMENT,
+                                endpoint: ENDPOINT,
+                                apiKey: API_KEY)
+                            .Build();
+                
+                // Add the Google connector to the reasoning kernel as well
+                questionAnswererKernel.ImportPluginFromObject(new WebSearchEnginePlugin(google), "google");
+            }
+            else
+            {
+                // Use the standard kernel if "LLM" is selected or if reasoning model deployment is not configured
+                questionAnswererKernel = kernel;
+            }
 
             ChatCompletionAgent QuestionAnswererAgent =
                 new()
                 {
                     Instructions = QuestionAnswererPrompt,
                     Name = "QuestionAnswererAgent",
-                    Kernel = kernel,
+                    Kernel = questionAnswererKernel,
                     ExecutionSettings = new OpenAIPromptExecutionSettings
                     {
                         ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
